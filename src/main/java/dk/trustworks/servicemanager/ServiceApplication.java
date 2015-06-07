@@ -12,15 +12,15 @@ import java.net.URI;
 /**
  * Created by hans on 16/03/15.
  */
-public class Application {
+public class ServiceApplication {
 
     static ServiceProvider serviceProvider;
 
     public static void main(String[] args) throws Exception {
-        new Application();
+        new ServiceApplication();
     }
 
-    public Application() throws Exception {
+    public ServiceApplication() throws Exception {
         System.out.println("Application");
         ClientProxyZookeeper userManagerProxy = new ClientProxyZookeeper("userservice");
         ClientProxyZookeeper clientManagerProxy = new ClientProxyZookeeper("clientservice");
