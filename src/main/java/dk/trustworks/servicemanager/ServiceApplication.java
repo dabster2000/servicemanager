@@ -24,6 +24,8 @@ public class ServiceApplication {
         System.out.println("Application");
         ClientProxyZookeeper userManagerProxy = new ClientProxyZookeeper("userservice");
         ClientProxyZookeeper clientManagerProxy = new ClientProxyZookeeper("clientservice");
+        ClientProxyZookeeper timeManagerProxy = new ClientProxyZookeeper("timeservice");
+        ClientProxyZookeeper biManagerProxy = new ClientProxyZookeeper("biservice");
 
         SimpleProxyClientProvider provider = new SimpleProxyClientProvider(new URI("http://localhost:8081"));
 
@@ -33,6 +35,8 @@ public class ServiceApplication {
                 .setHandler(Handlers.path()
                         .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                         .addPrefixPath("/clientservice", new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/biservice", new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/timeservice", new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                         .addPrefixPath("/", new ProxyHandler(provider, 30000, ResponseCodeHandler.HANDLE_404)))
                 .build();
         try {
@@ -44,6 +48,8 @@ public class ServiceApplication {
                     .setHandler(Handlers.path()
                             .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                             .addPrefixPath("/clientservice", new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                            .addPrefixPath("/biservice", new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                            .addPrefixPath("/timeservice", new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                             .addPrefixPath("/", new ProxyHandler(provider, 30000, ResponseCodeHandler.HANDLE_404)))
                     .build();
             reverseProxy.start();
