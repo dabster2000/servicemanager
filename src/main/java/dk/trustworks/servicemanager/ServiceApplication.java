@@ -30,7 +30,7 @@ public class ServiceApplication {
         SimpleProxyClientProvider provider = new SimpleProxyClientProvider(new URI("http://localhost:8081"));
 
         Undertow reverseProxy = Undertow.builder()
-                .addHttpListener(8080, "localhost").addHttpListener(80, "52.28.152.190")
+                .addHttpListener(80, "0.0.0.0")
                 .setIoThreads(4)
                 .setHandler(Handlers.path()
                         .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
