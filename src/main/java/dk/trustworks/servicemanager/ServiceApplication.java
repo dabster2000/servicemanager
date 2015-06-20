@@ -43,6 +43,7 @@ public class ServiceApplication {
             reverseProxy.start();
             System.out.println("Running on port 80");
         } catch (RuntimeException e) {
+            e.printStackTrace();
             reverseProxy = Undertow.builder()
                     .addHttpListener(9090, "localhost")
                     .setIoThreads(4)
