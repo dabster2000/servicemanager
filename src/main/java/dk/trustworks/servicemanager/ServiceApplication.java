@@ -2,6 +2,7 @@ package dk.trustworks.servicemanager;
 
 import io.undertow.Handlers;
 import io.undertow.Undertow;
+import io.undertow.UndertowOptions;
 import io.undertow.server.handlers.ResponseCodeHandler;
 import io.undertow.server.handlers.proxy.ProxyHandler;
 import io.undertow.server.handlers.proxy.SimpleProxyClientProvider;
@@ -32,6 +33,7 @@ public class ServiceApplication {
         Undertow reverseProxy = Undertow.builder()
                 .addHttpListener(80, "172.31.31.176")
                 .setIoThreads(4)
+                .setServerOption(UndertowOptions.ENABLE_HTTP2, true)
                 .setHandler(Handlers.path()
                         .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                         .addPrefixPath("/clientservice", new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
