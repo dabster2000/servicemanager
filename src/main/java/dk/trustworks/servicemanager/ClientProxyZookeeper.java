@@ -1,5 +1,7 @@
 package dk.trustworks.servicemanager;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.undertow.client.ClientCallback;
 import io.undertow.client.ClientConnection;
 import io.undertow.client.UndertowClient;
@@ -15,20 +17,20 @@ import org.apache.curator.retry.RetryNTimes;
 import org.apache.curator.x.discovery.ServiceDiscovery;
 import org.apache.curator.x.discovery.ServiceDiscoveryBuilder;
 import org.apache.curator.x.discovery.ServiceProvider;
-import org.xnio.ChannelListener;
 import org.xnio.IoUtils;
 import org.xnio.OptionMap;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.channels.Channel;
 import java.util.concurrent.TimeUnit;
 
 /**
  * Created by hans on 22/03/15.
  */
 public class ClientProxyZookeeper implements ProxyClient {
-    //private final URI uri;
+
+    final private Cache<String, HttpServerExchange> serviceCache = CacheBuilder.newBuilder().expireAfterAccess(2, TimeUnit.MINUTES).maximumSize(100).build();
+
     private final AttachmentKey<ClientConnection> clientAttachmentKey = AttachmentKey.create(ClientConnection.class);
     private final UndertowClient client;
 
@@ -37,10 +39,9 @@ public class ClientProxyZookeeper implements ProxyClient {
     private ServiceProvider serviceProvider;
 
     public ClientProxyZookeeper(String service) {
-        System.out.println("ClientProxyZookeeper");
         client = UndertowClient.getInstance();
 
-        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient("ip-172-31-20-150.eu-central-1.compute.internal:2181", new RetryNTimes(5, 1000));
+        CuratorFramework curatorFramework = CuratorFrameworkFactory.newClient("localhost:2181", new RetryNTimes(5, 1000)); //ip-172-31-20-150.eu-central-1.compute.internal
         curatorFramework.start();
 
         try {
@@ -55,7 +56,7 @@ public class ClientProxyZookeeper implements ProxyClient {
                     .build();
             serviceProvider.start();
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 
@@ -66,9 +67,9 @@ public class ClientProxyZookeeper implements ProxyClient {
 
     @Override
     public void getConnection(ProxyTarget target, HttpServerExchange exchange, ProxyCallback<ProxyConnection> callback, long timeout, TimeUnit timeUnit) {
-        System.out.println("getConnection");
         ClientConnection existing = exchange.getConnection().getAttachment(clientAttachmentKey);
         URI uri = getUri(exchange);
+        HttpServerExchange cachedExchange = serviceCache.getIfPresent(exchange.getRequestURI() + "-" + exchange.getQueryString());
         if (existing != null) {
             if (existing.isOpen()) {
                 callback.completed(exchange, new ProxyConnection(existing, uri.getPath() == null ? "/" : uri.getPath()));
@@ -81,15 +82,12 @@ public class ClientProxyZookeeper implements ProxyClient {
     }
 
     private URI getUri(HttpServerExchange exchange) {
-        System.out.println("getURI for service: "+exchange.getRequestPath().split("/")[1]);
-        URI uri = null;
         try {
-            uri = new URI(serviceProvider.getInstance().buildUriSpec());
+            URI uri = new URI(serviceProvider.getInstance().buildUriSpec());
+            return uri;
         } catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
-        System.out.println("returning: "+uri.toString());
-        return uri;
     }
 
     private final class ConnectNotifier implements ClientCallback<ClientConnection> {
@@ -103,22 +101,10 @@ public class ClientProxyZookeeper implements ProxyClient {
 
         @Override
         public void completed(final ClientConnection connection) {
-            System.out.println("completed");
             final ServerConnection serverConnection = exchange.getConnection();
-            //we attach to the connection so it can be re-used
             serverConnection.putAttachment(clientAttachmentKey, connection);
-            serverConnection.addCloseListener(new ServerConnection.CloseListener() {
-                @Override
-                public void closed(ServerConnection serverConnection) {
-                    IoUtils.safeClose(connection);
-                }
-            });
-            connection.getCloseSetter().set(new ChannelListener<Channel>() {
-                @Override
-                public void handleEvent(Channel channel) {
-                    serverConnection.removeAttachment(clientAttachmentKey);
-                }
-            });
+            serverConnection.addCloseListener(serverConnection1 -> IoUtils.safeClose(connection));
+            connection.getCloseSetter().set(channel -> serverConnection.removeAttachment(clientAttachmentKey));
             String path = getUri(exchange).getPath();
             callback.completed(exchange, new ProxyConnection(connection, path == null ? "/" : path));
         }
