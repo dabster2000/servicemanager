@@ -27,17 +27,15 @@ public class ServiceApplication {
         ClientProxyZookeeper timeManagerProxy = new ClientProxyZookeeper("timeservice");
         ClientProxyZookeeper biManagerProxy = new ClientProxyZookeeper("biservice");
 
-        //SimpleProxyClientProvider provider = new SimpleProxyClientProvider(new URI("http://localhost:8081"));
-
         Undertow reverseProxy = Undertow.builder()
                 .addHttpListener(80, "172.31.20.150")
                 .setIoThreads(4)
                 .setServerOption(UndertowOptions.ENABLE_HTTP2, true)
                 .setHandler(Handlers.path()
-                        .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
-                        .addPrefixPath("/clientservice", new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
-                        .addPrefixPath("/biservice", new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
-                        .addPrefixPath("/timeservice", new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/userservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
+                        .addPrefixPath("/clientservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
+                        .addPrefixPath("/biservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
+                        .addPrefixPath("/timeservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
                         .addPrefixPath("/", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
                 .build();
         try {
