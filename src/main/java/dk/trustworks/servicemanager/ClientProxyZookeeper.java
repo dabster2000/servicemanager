@@ -36,7 +36,7 @@ public class ClientProxyZookeeper implements ProxyClient {
 
     private static final ProxyTarget TARGET = new ProxyTarget() {};
 
-    private ServiceProvider serviceProvider;
+    private final ServiceProvider serviceProvider;
 
     public ClientProxyZookeeper(String service) {
         client = UndertowClient.getInstance();
