@@ -53,10 +53,10 @@ public class ServiceApplication {
                 .setIoThreads(4)
                 .setServerOption(UndertowOptions.ENABLE_HTTP2, true)
                 .setHandler(Handlers.path()
-                        .addPrefixPath("/userservice", addSecurity(new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404), identityManager))
-                        .addPrefixPath("/clientservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
-                        .addPrefixPath("/biservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
-                        .addPrefixPath("/timeservice", new CacheHandler(new DirectBufferCache(100, 10, 1000), new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
+                        .addPrefixPath("/userservice", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/clientservice", new ProxyHandler(clientManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/biservice", new ProxyHandler(biManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
+                        .addPrefixPath("/timeservice", new ProxyHandler(timeManagerProxy, 30000, ResponseCodeHandler.HANDLE_404))
                         .addPrefixPath("/", new ProxyHandler(userManagerProxy, 30000, ResponseCodeHandler.HANDLE_404)))
                 .build();
         try {
